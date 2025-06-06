@@ -1,0 +1,54 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # Ollama - Local LLM Runtime
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./models:/models
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - ai-network
+    # Uncomment if you have NVIDIA GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Open WebUI - Chat Interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    volumes:
+      - open_webui_data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=your-secret-key-here
+      - WEBUI_AUTH=False  # Set to True if you want authentication
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - ai-network
+
+
+networks:
+  ai-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  open_webui_data:
